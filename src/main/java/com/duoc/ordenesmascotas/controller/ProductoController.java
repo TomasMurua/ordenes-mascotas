@@ -2,6 +2,7 @@ package com.duoc.ordenesmascotas.controller;
 
 import com.duoc.ordenesmascotas.model.Producto;
 import com.duoc.ordenesmascotas.service.ProductoService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +23,11 @@ public class ProductoController {
     }
 
     @GetMapping("/{id}")
-    public Producto obtenerPorId(@PathVariable Long id) {
-        return productoService.getById(id);
+    public ResponseEntity<Producto> obtenerPorId(@PathVariable Long id) {
+        Producto producto = productoService.getById(id);
+        if (producto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(producto);
     }
 }
