@@ -1,7 +1,10 @@
 package com.duoc.ordenesmascotas.controller;
 
+import com.duoc.ordenesmascotas.dto.OrdenRequestDto;
 import com.duoc.ordenesmascotas.model.Orden;
 import com.duoc.ordenesmascotas.service.OrdenService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,22 +21,34 @@ public class OrdenController {
     }
 
     @GetMapping
-    public List<Orden> listarTodas() {
+    public List<Orden> listar() {
         return ordenService.getAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Orden> obtenerPorId(@PathVariable Long id) {
-        Orden orden = ordenService.getById(id);
-        if (orden == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(orden);
+    public Orden obtener(@PathVariable Long id) {
+        return ordenService.getById(id);
     }
 
     @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<Orden>> filtrarPorEstado(@PathVariable String estado) {
-        List<Orden> ordenes = ordenService.getByEstado(estado);
-        return ResponseEntity.ok(ordenes);
+    public List<Orden> porEstado(@PathVariable String estado) {
+        return ordenService.getByEstado(estado);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Orden crear(@Valid @RequestBody OrdenRequestDto dto) {
+        return ordenService.create(dto);
+    }
+
+    @PutMapping("/{id}")
+    public Orden actualizar(@PathVariable Long id, @Valid @RequestBody OrdenRequestDto dto) {
+        return ordenService.update(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        ordenService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

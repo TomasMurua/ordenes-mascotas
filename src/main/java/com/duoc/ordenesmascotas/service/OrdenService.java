@@ -1,45 +1,66 @@
 package com.duoc.ordenesmascotas.service;
 
+import com.duoc.ordenesmascotas.dto.OrdenRequestDto;
+import com.duoc.ordenesmascotas.exception.ResourceNotFoundException;
 import com.duoc.ordenesmascotas.model.Orden;
+import com.duoc.ordenesmascotas.repository.OrdenRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrdenService {
 
-    private List<Orden> ordenes = new ArrayList<>();
+    private static final Logger log = LoggerFactory.getLogger(OrdenService.class);
 
-    public OrdenService() {
-        ordenes.add(new Orden(1L, "Maria Lopez",
-                List.of("Alimento Premium Perro 15kg", "Juguete Hueso de Goma"),
-                "2026-03-25", "pendiente", 38980));
+    private final OrdenRepository repository;
 
-        ordenes.add(new Orden(2L, "Carlos Muñoz",
-                List.of("Collar Ajustable Mediano", "Shampoo Antipulgas 500ml"),
-                "2026-03-22", "enviada", 16480));
-
-        ordenes.add(new Orden(3L, "Ana Torres",
-                List.of("Cama Rectangular Grande"),
-                "2026-03-18", "entregada", 24990));
+    public OrdenService(OrdenRepository repository) {
+        this.repository = repository;
     }
 
     public List<Orden> getAll() {
-        return ordenes;
+        return repository.findAll();
     }
 
     public Orden getById(Long id) {
-        return ordenes.stream()
-                .filter(o -> o.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada: id=" + id));
     }
 
     public List<Orden> getByEstado(String estado) {
-        return ordenes.stream()
-                .filter(o -> o.getEstado().equalsIgnoreCase(estado))
-                .collect(Collectors.toList());
+        return repository.findByEstadoIgnoreCase(estado);
+    }
+
+    public Orden create(OrdenRequestDto dto) {
+        log.info("Creando orden cliente={}", dto.getNombreCliente());
+        Orden o = new Orden(dto.getNombreCliente(),
+                new ArrayList<>(dto.getProductos()),
+                dto.getFechaOrden(),
+                dto.getEstado(),
+                dto.getTotal());
+        return repository.save(o);
+    }
+
+    public Orden update(Long id, OrdenRequestDto dto) {
+        Orden o = getById(id);
+        o.setNombreCliente(dto.getNombreCliente());
+        o.setProductos(new ArrayList<>(dto.getProductos()));
+        o.setFechaOrden(dto.getFechaOrden());
+        o.setEstado(dto.getEstado());
+        o.setTotal(dto.getTotal());
+        log.info("Actualizando orden id={}", id);
+        return repository.save(o);
+    }
+
+    public void delete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new ResourceNotFoundException("Orden no encontrada: id=" + id);
+        }
+        log.info("Eliminando orden id={}", id);
+        repository.deleteById(id);
     }
 }
