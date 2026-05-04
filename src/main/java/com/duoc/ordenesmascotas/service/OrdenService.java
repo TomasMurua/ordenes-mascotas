@@ -1,6 +1,7 @@
 package com.duoc.ordenesmascotas.service;
 
 import com.duoc.ordenesmascotas.dto.OrdenRequestDto;
+import com.duoc.ordenesmascotas.dto.OrdenResponseDto;
 import com.duoc.ordenesmascotas.exception.ResourceNotFoundException;
 import com.duoc.ordenesmascotas.model.Orden;
 import com.duoc.ordenesmascotas.repository.OrdenRepository;
@@ -22,38 +23,40 @@ public class OrdenService {
         this.repository = repository;
     }
 
-    public List<Orden> getAll() {
-        return repository.findAll();
+    public List<OrdenResponseDto> getAll() {
+        return repository.findAll().stream().map(this::toDto).toList();
     }
 
-    public Orden getById(Long id) {
-        return repository.findById(id)
+    public OrdenResponseDto getById(Long id) {
+        Orden o = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada: id=" + id));
+        return toDto(o);
     }
 
-    public List<Orden> getByEstado(String estado) {
-        return repository.findByEstadoIgnoreCase(estado);
+    public List<OrdenResponseDto> getByEstado(String estado) {
+        return repository.findByEstadoIgnoreCase(estado).stream().map(this::toDto).toList();
     }
 
-    public Orden create(OrdenRequestDto dto) {
+    public OrdenResponseDto create(OrdenRequestDto dto) {
         log.info("Creando orden cliente={}", dto.getNombreCliente());
         Orden o = new Orden(dto.getNombreCliente(),
                 new ArrayList<>(dto.getProductos()),
                 dto.getFechaOrden(),
                 dto.getEstado(),
                 dto.getTotal());
-        return repository.save(o);
+        return toDto(repository.save(o));
     }
 
-    public Orden update(Long id, OrdenRequestDto dto) {
-        Orden o = getById(id);
+    public OrdenResponseDto update(Long id, OrdenRequestDto dto) {
+        Orden o = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada: id=" + id));
         o.setNombreCliente(dto.getNombreCliente());
         o.setProductos(new ArrayList<>(dto.getProductos()));
         o.setFechaOrden(dto.getFechaOrden());
         o.setEstado(dto.getEstado());
         o.setTotal(dto.getTotal());
         log.info("Actualizando orden id={}", id);
-        return repository.save(o);
+        return toDto(repository.save(o));
     }
 
     public void delete(Long id) {
@@ -62,5 +65,11 @@ public class OrdenService {
         }
         log.info("Eliminando orden id={}", id);
         repository.deleteById(id);
+    }
+
+    private OrdenResponseDto toDto(Orden o) {
+        return new OrdenResponseDto(o.getId(), o.getNombreCliente(),
+                new ArrayList<>(o.getProductos()),
+                o.getFechaOrden(), o.getEstado(), o.getTotal());
     }
 }
